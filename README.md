@@ -45,11 +45,13 @@ gh repo-setup --help
 ## What it does
 
 1. **Creates README.md** with a basic template including:
-   - Project title
+   - Project title (using actual repository name)
    - Description, Installation, Usage sections
    - MIT license reference
 
-2. **Creates MIT LICENSE** file automatically
+2. **Creates MIT LICENSE** file automatically with:
+   - Current year
+   - Your GitHub username
 
 3. **Configures repository settings**:
    - Default branch: `master`
