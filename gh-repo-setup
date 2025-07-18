@@ -117,7 +117,7 @@ configure_repo() {
         -f allow_merge_commit="$ALLOW_MERGE_COMMIT" \
         -f allow_rebase_merge="$ALLOW_REBASE_MERGE" \
         -f squash_merge_commit_title='PR_TITLE' \
-        -f squash_merge_commit_message='PR_TITLE' \
+        -f squash_merge_commit_message='BLANK' \
         -f allow_auto_merge="$ALLOW_AUTO_MERGE" \
         -f delete_branch_on_merge="$DELETE_BRANCH_ON_MERGE"
     
