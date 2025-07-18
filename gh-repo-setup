@@ -58,8 +58,16 @@ MIT
 # Function to create MIT LICENSE
 create_license() {
     if [ ! -f "LICENSE" ]; then
-        gh api /licenses/mit -q .body > LICENSE
-        echo "✓ Created MIT LICENSE"
+        # Get current user and year
+        local username=$(gh api user -q .login)
+        local year=$(date +%Y)
+        
+        # Get MIT license template and replace placeholders
+        gh api /licenses/mit -q .body | \
+            sed "s/\[year\]/$year/g" | \
+            sed "s/\[fullname\]/$username/g" > LICENSE
+        
+        echo "✓ Created MIT LICENSE with $username ($year)"
     else
         echo "✓ LICENSE already exists"
     fi
