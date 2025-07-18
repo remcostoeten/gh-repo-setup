@@ -7,22 +7,49 @@ set -e
 REPO_NAME=""
 CURRENT_DIR=$(pwd)
 
+# Default settings
+DEFAULT_BRANCH="master"
+HAS_WIKI="false"
+HAS_ISSUES="false"
+HAS_PROJECTS="false"
+HAS_DISCUSSIONS="false"
+ALLOW_SQUASH_MERGE="true"
+ALLOW_MERGE_COMMIT="false"
+ALLOW_REBASE_MERGE="false"
+ALLOW_AUTO_MERGE="true"
+DELETE_BRANCH_ON_MERGE="true"
+CREATE_README="true"
+CREATE_LICENSE="true"
+
 # Function to show usage
 show_usage() {
-    echo "Usage: gh repo-setup [REPOSITORY_NAME]"
+    echo "Usage: gh repo-setup [REPOSITORY_NAME] [OPTIONS]"
     echo ""
-    echo "Setup a GitHub repository with custom defaults:"
-    echo "  - Master as default branch"
-    echo "  - Disabled: wikis, issues, projects, discussions"
-    echo "  - Enabled: auto-merge, squash merge with PR title"
-    echo "  - Auto-generated: README.md, MIT LICENSE"
+    echo "Setup a GitHub repository with custom defaults."
     echo ""
     echo "Arguments:"
-    echo "  REPOSITORY_NAME   Name of the repository (optional if run in existing repo)"
+    echo "  REPOSITORY_NAME               Name of the repository (optional if run in existing repo)"
+    echo ""
+    echo "Options:"
+    echo "  -h, --help                    Show this help message"
+    echo "  --branch BRANCH               Set default branch (default: master)"
+    echo "  --enable-wiki                 Enable wiki (default: disabled)"
+    echo "  --enable-issues               Enable issues (default: disabled)"
+    echo "  --enable-projects             Enable projects (default: disabled)"
+    echo "  --enable-discussions          Enable discussions (default: disabled)"
+    echo "  --disable-squash-merge        Disable squash merge (default: enabled)"
+    echo "  --enable-merge-commit         Enable merge commits (default: disabled)"
+    echo "  --enable-rebase-merge         Enable rebase merge (default: disabled)"
+    echo "  --disable-auto-merge          Disable auto-merge (default: enabled)"
+    echo "  --no-delete-branch-on-merge   Don't delete branch on merge (default: delete)"
+    echo "  --no-readme                   Don't create README.md"
+    echo "  --no-license                  Don't create LICENSE"
     echo ""
     echo "Examples:"
-    echo "  gh repo-setup my-project      # Setup new repository"
-    echo "  gh repo-setup                 # Setup current repository"
+    echo "  gh repo-setup my-project                           # Setup with defaults"
+    echo "  gh repo-setup --enable-issues --branch main        # Enable issues, use main branch"
+    echo "  gh repo-setup --no-readme --no-license             # Skip file creation"
+    echo "  gh repo-setup owner/repo --enable-wiki             # Setup specific repo with wiki"
 }
 
 # Function to create README.md
@@ -81,32 +108,96 @@ configure_repo() {
     
     # Configure repository settings
     gh api --method PATCH "/repos/${repo_name}" \
-        -f default_branch='master' \
-        -f has_wiki=false \
-        -f has_issues=false \
-        -f has_projects=false \
-        -f has_discussions=false \
-        -f allow_squash_merge=true \
-        -f allow_merge_commit=false \
-        -f allow_rebase_merge=false \
+        -f default_branch="$DEFAULT_BRANCH" \
+        -f has_wiki="$HAS_WIKI" \
+        -f has_issues="$HAS_ISSUES" \
+        -f has_projects="$HAS_PROJECTS" \
+        -f has_discussions="$HAS_DISCUSSIONS" \
+        -f allow_squash_merge="$ALLOW_SQUASH_MERGE" \
+        -f allow_merge_commit="$ALLOW_MERGE_COMMIT" \
+        -f allow_rebase_merge="$ALLOW_REBASE_MERGE" \
         -f squash_merge_commit_title='PR_TITLE' \
         -f squash_merge_commit_message='PR_TITLE' \
-        -f allow_auto_merge=true \
-        -f delete_branch_on_merge=true
+        -f allow_auto_merge="$ALLOW_AUTO_MERGE" \
+        -f delete_branch_on_merge="$DELETE_BRANCH_ON_MERGE"
     
     echo "✓ Repository settings configured"
 }
 
 # Parse arguments
-if [ "$1" = "--help" ] || [ "$1" = "-h" ]; then
-    show_usage
-    exit 0
-fi
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        -h|--help)
+            show_usage
+            exit 0
+            ;;
+        --branch)
+            DEFAULT_BRANCH="$2"
+            shift 2
+            ;;
+        --enable-wiki)
+            HAS_WIKI="true"
+            shift
+            ;;
+        --enable-issues)
+            HAS_ISSUES="true"
+            shift
+            ;;
+        --enable-projects)
+            HAS_PROJECTS="true"
+            shift
+            ;;
+        --enable-discussions)
+            HAS_DISCUSSIONS="true"
+            shift
+            ;;
+        --disable-squash-merge)
+            ALLOW_SQUASH_MERGE="false"
+            shift
+            ;;
+        --enable-merge-commit)
+            ALLOW_MERGE_COMMIT="true"
+            shift
+            ;;
+        --enable-rebase-merge)
+            ALLOW_REBASE_MERGE="true"
+            shift
+            ;;
+        --disable-auto-merge)
+            ALLOW_AUTO_MERGE="false"
+            shift
+            ;;
+        --no-delete-branch-on-merge)
+            DELETE_BRANCH_ON_MERGE="false"
+            shift
+            ;;
+        --no-readme)
+            CREATE_README="false"
+            shift
+            ;;
+        --no-license)
+            CREATE_LICENSE="false"
+            shift
+            ;;
+        -*)
+            echo "Unknown option $1"
+            show_usage
+            exit 1
+            ;;
+        *)
+            if [ -z "$REPO_NAME" ]; then
+                REPO_NAME="$1"
+            else
+                echo "Multiple repository names provided: $REPO_NAME and $1"
+                exit 1
+            fi
+            shift
+            ;;
+    esac
+done
 
-if [ -n "$1" ]; then
-    REPO_NAME="$1"
-else
-    # Try to get repository name from current directory
+# If no repository name provided, try to determine from current directory
+if [ -z "$REPO_NAME" ]; then
     if git rev-parse --git-dir > /dev/null 2>&1; then
         REPO_NAME=$(gh repo view --json nameWithOwner -q .nameWithOwner 2>/dev/null || echo "")
         if [ -z "$REPO_NAME" ]; then
@@ -124,8 +215,13 @@ echo ""
 
 # Create files
 repo_basename=$(basename "$REPO_NAME")
-create_readme "$repo_basename"
-create_license
+if [ "$CREATE_README" = "true" ]; then
+    create_readme "$repo_basename"
+fi
+
+if [ "$CREATE_LICENSE" = "true" ]; then
+    create_license
+fi
 
 # Configure repository
 configure_repo "$REPO_NAME"

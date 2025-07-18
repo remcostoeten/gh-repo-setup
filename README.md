@@ -27,20 +27,49 @@ gh extension install .
 
 ## Usage
 
-### Setup current repository
+### Basic usage
 ```bash
+# Setup current repository with defaults
 gh repo-setup
-```
 
-### Setup specific repository
-```bash
+# Setup specific repository
 gh repo-setup owner/repository-name
-```
 
-### Show help
-```bash
+# Show help
 gh repo-setup --help
 ```
+
+### Advanced usage with options
+```bash
+# Use main branch instead of master
+gh repo-setup --branch main
+
+# Enable issues and discussions
+gh repo-setup --enable-issues --enable-discussions
+
+# Skip creating README and LICENSE
+gh repo-setup --no-readme --no-license
+
+# Enable wiki and projects for specific repo
+gh repo-setup owner/repo --enable-wiki --enable-projects
+
+# Enable merge commits and disable auto-merge
+gh repo-setup --enable-merge-commit --disable-auto-merge
+```
+
+### Available options
+- `--branch BRANCH` - Set default branch (default: master)
+- `--enable-wiki` - Enable wiki (default: disabled)
+- `--enable-issues` - Enable issues (default: disabled)
+- `--enable-projects` - Enable projects (default: disabled)
+- `--enable-discussions` - Enable discussions (default: disabled)
+- `--disable-squash-merge` - Disable squash merge (default: enabled)
+- `--enable-merge-commit` - Enable merge commits (default: disabled)
+- `--enable-rebase-merge` - Enable rebase merge (default: disabled)
+- `--disable-auto-merge` - Disable auto-merge (default: enabled)
+- `--no-delete-branch-on-merge` - Don't delete branch on merge (default: delete)
+- `--no-readme` - Don't create README.md
+- `--no-license` - Don't create LICENSE
 
 ## What it does
 
